@@ -1,0 +1,585 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["multiSchema"]
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+  schemas   = ["auth", "public"]
+}
+
+model users {
+  instance_id                 String?                @db.Uuid
+  id                          String                 @id @db.Uuid
+  aud                         String?                @db.VarChar(255)
+  role                        String?                @db.VarChar(255)
+  email                       String?                @db.VarChar(255)
+  encrypted_password          String?                @db.VarChar(255)
+  email_confirmed_at          DateTime?              @db.Timestamptz(6)
+  invited_at                  DateTime?              @db.Timestamptz(6)
+  confirmation_token          String?                @db.VarChar(255)
+  confirmation_sent_at        DateTime?              @db.Timestamptz(6)
+  recovery_token              String?                @db.VarChar(255)
+  recovery_sent_at            DateTime?              @db.Timestamptz(6)
+  email_change_token_new      String?                @db.VarChar(255)
+  email_change                String?                @db.VarChar(255)
+  email_change_sent_at        DateTime?              @db.Timestamptz(6)
+  last_sign_in_at             DateTime?              @db.Timestamptz(6)
+  raw_app_meta_data           Json?
+  raw_user_meta_data          Json?
+  is_super_admin              Boolean?
+  created_at                  DateTime?              @db.Timestamptz(6)
+  updated_at                  DateTime?              @db.Timestamptz(6)
+  phone                       String?                @unique
+  phone_confirmed_at          DateTime?              @db.Timestamptz(6)
+  phone_change                String?                @default("")
+  phone_change_token          String?                @default("") @db.VarChar(255)
+  phone_change_sent_at        DateTime?              @db.Timestamptz(6)
+  confirmed_at                DateTime?              @db.Timestamptz(6)
+  email_change_token_current  String?                @default("") @db.VarChar(255)
+  email_change_confirm_status Int?                   @default(0) @db.SmallInt
+  banned_until                DateTime?              @db.Timestamptz(6)
+  reauthentication_token      String?                @default("") @db.VarChar(255)
+  reauthentication_sent_at    DateTime?              @db.Timestamptz(6)
+  is_sso_user                 Boolean                @default(false)
+  deleted_at                  DateTime?              @db.Timestamptz(6)
+  is_anonymous                Boolean                @default(false)
+  identities                  identities[]
+  mfa_factors                 mfa_factors[]
+  oauth_authorizations        oauth_authorizations[]
+  oauth_consents              oauth_consents[]
+  one_time_tokens             one_time_tokens[]
+  sessions                    sessions[]
+  webauthn_challenges         webauthn_challenges[]
+  webauthn_credentials        webauthn_credentials[]
+  profiles                    profiles?
+
+  @@index([instance_id])
+  @@index([is_anonymous])
+  @@schema("auth")
+}
+
+model annonce_likes {
+  id           BigInt   @id @default(autoincrement())
+  annonce_id   String   @db.Uuid
+  chercheur_id String   @db.Uuid
+  liked_at     DateTime @default(now()) @db.Timestamptz(6)
+  annonces     annonces @relation(fields: [annonce_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  profiles     profiles @relation(fields: [chercheur_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([annonce_id, chercheur_id])
+  @@index([annonce_id], map: "idx_likes_annonce")
+  @@index([chercheur_id], map: "idx_likes_chercheur")
+  @@schema("public")
+}
+
+model annonce_photos {
+  id                   BigInt   @id @default(autoincrement())
+  annonce_id           String   @db.Uuid
+  cloudinary_url       String
+  cloudinary_public_id String   @unique
+  thumbnail_url        String?
+  ordre                Int      @default(0) @db.SmallInt
+  created_at           DateTime @default(now()) @db.Timestamptz(6)
+  annonces             annonces @relation(fields: [annonce_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([annonce_id, ordre], map: "idx_photos_annonce")
+  @@schema("public")
+}
+
+model annonce_vues {
+  id           BigInt   @id @default(autoincrement())
+  annonce_id   String   @db.Uuid
+  chercheur_id String   @db.Uuid
+  viewed_at    DateTime @default(now()) @db.Timestamptz(6)
+  annonces     annonces @relation(fields: [annonce_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  profiles     profiles @relation(fields: [chercheur_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([annonce_id, chercheur_id])
+  @@index([annonce_id], map: "idx_vues_annonce")
+  @@index([chercheur_id], map: "idx_vues_chercheur")
+  @@index([viewed_at(sort: Desc)], map: "idx_vues_viewed_at")
+  @@schema("public")
+}
+
+model annonces {
+  id                    String                  @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  offreur_id            String                  @db.Uuid
+  statut                annonce_status          @default(brouillon)
+  service               service_type
+  type_bien             property_type
+  ville_id              Int
+  quartier_id           Int?
+  adresse               String
+  geom                  String?                 @default("")
+  surface_m2            Decimal                 @db.Decimal(8, 2)
+  nb_chambres           Int                     @default(0) @db.SmallInt
+  nb_sejours            Int                     @default(0) @db.SmallInt
+  nb_cuisines           Int                     @default(0) @db.SmallInt
+  nb_douches_wc         Int                     @default(0) @db.SmallInt
+  prix                  Decimal                 @db.Decimal(15, 2)
+  prix_unite            String?
+  titre                 String
+  description           String?
+  nb_vues               Int                     @default(0)
+  nb_likes              Int                     @default(0)
+  nb_avis               Int                     @default(0)
+  note_moyenne          Decimal?                @db.Decimal(3, 2)
+  created_at            DateTime                @default(now()) @db.Timestamptz(6)
+  updated_at            DateTime                @default(now()) @db.Timestamptz(6)
+  published_at          DateTime?               @db.Timestamptz(6)
+  archived_at           DateTime?               @db.Timestamptz(6)
+  annonce_likes         annonce_likes[]
+  annonce_photos        annonce_photos[]
+  annonce_vues          annonce_vues[]
+  profiles              profiles                @relation(fields: [offreur_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  quartiers             quartiers?              @relation(fields: [quartier_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  villes                villes                  @relation(fields: [ville_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  annonces_sauvegardees annonces_sauvegardees[]
+  avis                  avis[]
+  conversations         conversations[]
+  historique_recherches historique_recherches[]
+  notifications         notifications[]
+  partages              partages[]
+  visites               visites[]
+
+  @@index([created_at(sort: Desc)], map: "idx_annonces_created")
+  @@index([offreur_id], map: "idx_annonces_offreur")
+  @@index([prix], map: "idx_annonces_prix")
+  @@index([quartier_id], map: "idx_annonces_quartier")
+  @@index([service], map: "idx_annonces_service")
+  @@index([statut], map: "idx_annonces_statut")
+  @@index([type_bien], map: "idx_annonces_type_bien")
+  @@index([ville_id], map: "idx_annonces_ville")
+  @@schema("public")
+}
+
+model annonces_sauvegardees {
+  id           BigInt   @id @default(autoincrement())
+  chercheur_id String   @db.Uuid
+  annonce_id   String   @db.Uuid
+  saved_at     DateTime @default(now()) @db.Timestamptz(6)
+  annonces     annonces @relation(fields: [annonce_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  profiles     profiles @relation(fields: [chercheur_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([chercheur_id, annonce_id])
+  @@index([annonce_id], map: "idx_saved_annonce")
+  @@index([chercheur_id], map: "idx_saved_chercheur")
+  @@schema("public")
+}
+
+model avis {
+  id                                   String          @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  annonce_id                           String          @db.Uuid
+  offreur_id                           String          @db.Uuid
+  chercheur_id                         String          @db.Uuid
+  note                                 Int             @db.SmallInt
+  commentaire                          String?
+  created_at                           DateTime        @default(now()) @db.Timestamptz(6)
+  updated_at                           DateTime        @default(now()) @db.Timestamptz(6)
+  annonces                             annonces        @relation(fields: [annonce_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  profiles_avis_chercheur_idToprofiles profiles        @relation("avis_chercheur_idToprofiles", fields: [chercheur_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  profiles_avis_offreur_idToprofiles   profiles        @relation("avis_offreur_idToprofiles", fields: [offreur_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  notifications                        notifications[]
+
+  @@unique([annonce_id, chercheur_id])
+  @@index([annonce_id], map: "idx_avis_annonce")
+  @@index([chercheur_id], map: "idx_avis_chercheur")
+  @@index([offreur_id], map: "idx_avis_offreur")
+  @@schema("public")
+}
+
+model conversations {
+  id                                            String     @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  annonce_id                                    String     @db.Uuid
+  offreur_id                                    String     @db.Uuid
+  chercheur_id                                  String     @db.Uuid
+  last_message_at                               DateTime?  @db.Timestamptz(6)
+  created_at                                    DateTime   @default(now()) @db.Timestamptz(6)
+  annonces                                      annonces   @relation(fields: [annonce_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  profiles_conversations_chercheur_idToprofiles profiles   @relation("conversations_chercheur_idToprofiles", fields: [chercheur_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  profiles_conversations_offreur_idToprofiles   profiles   @relation("conversations_offreur_idToprofiles", fields: [offreur_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  messages                                      messages[]
+
+  @@unique([annonce_id, offreur_id, chercheur_id])
+  @@index([annonce_id], map: "idx_conv_annonce")
+  @@index([chercheur_id, last_message_at(sort: Desc)], map: "idx_conv_chercheur")
+  @@index([offreur_id, last_message_at(sort: Desc)], map: "idx_conv_offreur")
+  @@schema("public")
+}
+
+model historique_recherches {
+  id           BigInt   @id @default(autoincrement())
+  chercheur_id String   @db.Uuid
+  action_type  String
+  annonce_id   String   @db.Uuid
+  created_at   DateTime @default(now()) @db.Timestamptz(6)
+  annonces     annonces @relation(fields: [annonce_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  profiles     profiles @relation(fields: [chercheur_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([annonce_id], map: "idx_historique_annonce")
+  @@index([chercheur_id, created_at(sort: Desc)], map: "idx_historique_chercheur")
+  @@schema("public")
+}
+
+model messages {
+  id              String          @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  conversation_id String          @db.Uuid
+  sender_id       String          @db.Uuid
+  contenu         String
+  statut          message_status  @default(envoye)
+  media_url       String?
+  media_type      String?
+  created_at      DateTime        @default(now()) @db.Timestamptz(6)
+  read_at         DateTime?       @db.Timestamptz(6)
+  conversations   conversations   @relation(fields: [conversation_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  profiles        profiles        @relation(fields: [sender_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  notifications   notifications[]
+
+  @@index([conversation_id, created_at], map: "idx_messages_conv")
+  @@index([sender_id], map: "idx_messages_sender")
+  @@schema("public")
+}
+
+model notifications {
+  id              String            @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  destinataire_id String            @db.Uuid
+  type            notification_type
+  titre           String
+  corps           String?
+  annonce_id      String?           @db.Uuid
+  message_id      String?           @db.Uuid
+  visite_id       String?           @db.Uuid
+  avis_id         String?           @db.Uuid
+  action_url      String?
+  is_read         Boolean           @default(false)
+  read_at         DateTime?         @db.Timestamptz(6)
+  created_at      DateTime          @default(now()) @db.Timestamptz(6)
+  annonces        annonces?         @relation(fields: [annonce_id], references: [id], onUpdate: NoAction)
+  avis            avis?             @relation(fields: [avis_id], references: [id], onUpdate: NoAction)
+  profiles        profiles          @relation(fields: [destinataire_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  messages        messages?         @relation(fields: [message_id], references: [id], onUpdate: NoAction)
+  visites         visites?          @relation(fields: [visite_id], references: [id], onUpdate: NoAction)
+
+  @@index([destinataire_id, created_at(sort: Desc)], map: "idx_notif_destinataire")
+  @@index([type], map: "idx_notif_type")
+  @@schema("public")
+}
+
+model partages {
+  id           BigInt    @id @default(autoincrement())
+  annonce_id   String    @db.Uuid
+  chercheur_id String?   @db.Uuid
+  plateforme   String
+  shared_at    DateTime  @default(now()) @db.Timestamptz(6)
+  annonces     annonces  @relation(fields: [annonce_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  profiles     profiles? @relation(fields: [chercheur_id], references: [id], onUpdate: NoAction)
+
+  @@index([annonce_id], map: "idx_partages_annonce")
+  @@schema("public")
+}
+
+model points_interet {
+  id          BigInt       @id @default(autoincrement())
+  osm_id      BigInt?      @unique
+  nom         String
+  categorie   poi_category
+  geom        String?      @default("")
+  ville_id    Int?
+  quartier_id Int?
+  adresse     String?
+  metadata    Json?
+  created_at  DateTime     @default(now()) @db.Timestamptz(6)
+  updated_at  DateTime     @default(now()) @db.Timestamptz(6)
+  quartiers   quartiers?   @relation(fields: [quartier_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  villes      villes?      @relation(fields: [ville_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([categorie], map: "idx_poi_categorie")
+  @@index([ville_id], map: "idx_poi_ville")
+  @@schema("public")
+}
+
+model profiles {
+  id                                                 String                  @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  auth_user_id                                       String                  @unique @db.Uuid
+  email                                              String                  @unique
+  nom                                                String
+  prenom                                             String
+  telephone                                          String
+  date_naissance                                     DateTime                @db.Date
+  profile_type                                       profile_type
+  avatar_url                                         String?
+  avatar_cloudinary_id                               String?
+  localisation                                       String?                 @default("")
+  localisation_ville                                 String?
+  localisation_quartier                              String?
+  is_active                                          Boolean                 @default(true)
+  is_verified                                        Boolean                 @default(false)
+  last_seen_at                                       DateTime?               @db.Timestamptz(6)
+  created_at                                         DateTime                @default(now()) @db.Timestamptz(6)
+  updated_at                                         DateTime                @default(now()) @db.Timestamptz(6)
+  annonce_likes                                      annonce_likes[]
+  annonce_vues                                       annonce_vues[]
+  annonces                                           annonces[]
+  annonces_sauvegardees                              annonces_sauvegardees[]
+  avis_avis_chercheur_idToprofiles                   avis[]                  @relation("avis_chercheur_idToprofiles")
+  avis_avis_offreur_idToprofiles                     avis[]                  @relation("avis_offreur_idToprofiles")
+  conversations_conversations_chercheur_idToprofiles conversations[]         @relation("conversations_chercheur_idToprofiles")
+  conversations_conversations_offreur_idToprofiles   conversations[]         @relation("conversations_offreur_idToprofiles")
+  historique_recherches                              historique_recherches[]
+  messages                                           messages[]
+  notifications                                      notifications[]
+  partages                                           partages[]
+  users                                              users                   @relation(fields: [auth_user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  visites_visites_chercheur_idToprofiles             visites[]               @relation("visites_chercheur_idToprofiles")
+  visites_visites_offreur_idToprofiles               visites[]               @relation("visites_offreur_idToprofiles")
+
+  @@index([profile_type], map: "idx_profiles_type")
+  @@index([localisation_ville], map: "idx_profiles_ville")
+  @@schema("public")
+}
+
+model quartiers {
+  id             Int              @id @default(autoincrement())
+  ville_id       Int
+  nom            String
+  geom           String?          @default("")
+  zone           String?          @default("")
+  created_at     DateTime         @default(now()) @db.Timestamptz(6)
+  annonces       annonces[]
+  points_interet points_interet[]
+  villes         villes           @relation(fields: [ville_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([ville_id, nom])
+  @@index([ville_id], map: "idx_quartiers_ville_id")
+  @@schema("public")
+}
+
+model villes {
+  id             Int              @id @default(autoincrement())
+  nom            String           @unique
+  geom           String?          @default("")
+  zone           String?          @default("")
+  code_postal    String?
+  created_at     DateTime         @default(now()) @db.Timestamptz(6)
+  annonces       annonces[]
+  points_interet points_interet[]
+  quartiers      quartiers[]
+
+  @@schema("public")
+}
+
+model visites {
+  id                                      String          @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  annonce_id                              String          @db.Uuid
+  chercheur_id                            String          @db.Uuid
+  offreur_id                              String          @db.Uuid
+  date_souhaitee                          DateTime        @db.Date
+  heure_debut                             DateTime        @db.Time(6)
+  duree_minutes                           Int             @default(30) @db.SmallInt
+  statut                                  visit_status    @default(en_attente)
+  date_confirmee                          DateTime?       @db.Date
+  heure_confirmee                         DateTime?       @db.Time(6)
+  message_demande                         String?
+  raison_annulation                       String?
+  created_at                              DateTime        @default(now()) @db.Timestamptz(6)
+  updated_at                              DateTime        @default(now()) @db.Timestamptz(6)
+  notifications                           notifications[]
+  annonces                                annonces        @relation(fields: [annonce_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  profiles_visites_chercheur_idToprofiles profiles        @relation("visites_chercheur_idToprofiles", fields: [chercheur_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  profiles_visites_offreur_idToprofiles   profiles        @relation("visites_offreur_idToprofiles", fields: [offreur_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([annonce_id], map: "idx_visites_annonce")
+  @@index([chercheur_id], map: "idx_visites_chercheur")
+  @@index([date_souhaitee], map: "idx_visites_date")
+  @@index([offreur_id], map: "idx_visites_offreur")
+  @@index([statut], map: "idx_visites_statut")
+  @@schema("public")
+}
+
+model Node {
+  id            BigInt @id
+  lat           Float
+  lng           Float
+  edgesAsSource Edge[] @relation("EdgeSource")
+  edgesAsTarget Edge[] @relation("EdgeTarget")
+
+  @@index([lat, lng])
+  @@map("nodes")
+  @@schema("public")
+}
+
+model Edge {
+  id         BigInt @id @default(autoincrement())
+  source     BigInt
+  target     BigInt
+  distance   Float
+  sourceNode Node   @relation("EdgeSource", fields: [source], references: [id])
+  targetNode Node   @relation("EdgeTarget", fields: [target], references: [id])
+
+  @@index([source])
+  @@index([target])
+  @@index([source, target])
+  @@map("edges")
+  @@schema("public")
+}
+
+enum aal_level {
+  aal1
+  aal2
+  aal3
+
+  @@schema("auth")
+}
+
+enum code_challenge_method {
+  s256
+  plain
+
+  @@schema("auth")
+}
+
+enum factor_status {
+  unverified
+  verified
+
+  @@schema("auth")
+}
+
+enum factor_type {
+  totp
+  webauthn
+  phone
+
+  @@schema("auth")
+}
+
+enum oauth_authorization_status {
+  pending
+  approved
+  denied
+  expired
+
+  @@schema("auth")
+}
+
+enum oauth_client_type {
+  public
+  confidential
+
+  @@schema("auth")
+}
+
+enum oauth_registration_type {
+  dynamic
+  manual
+
+  @@schema("auth")
+}
+
+enum oauth_response_type {
+  code
+
+  @@schema("auth")
+}
+
+enum one_time_token_type {
+  confirmation_token
+  reauthentication_token
+  recovery_token
+  email_change_token_new
+  email_change_token_current
+  phone_change_token
+
+  @@schema("auth")
+}
+
+enum annonce_status {
+  brouillon
+  publiee
+  suspendue
+  archivee
+  vendue_louee
+
+  @@schema("public")
+}
+
+enum message_status {
+  envoye
+  delivre
+  lu
+
+  @@schema("public")
+}
+
+enum notification_type {
+  message
+  like
+  avis
+  demande_visite
+  visite_confirmee
+  visite_annulee
+  visite_effectuee
+  nouvelle_annonce
+  vue_annonce
+
+  @@schema("public")
+}
+
+enum poi_category {
+  ecole
+  hopital
+  marche
+  transport
+  restaurant
+  banque
+  pharmacie
+  eglise
+  mosque
+  parc
+  supermarche
+  autre
+
+  @@schema("public")
+}
+
+enum profile_type {
+  offreur
+  chercheur
+
+  @@schema("public")
+}
+
+enum property_type {
+  appartement
+  maison
+  villa
+  studio
+  duplex
+  bureau
+  local_commercial
+  terrain
+  entrepot
+  autre
+
+  @@schema("public")
+}
+
+enum service_type {
+  location
+  vente
+
+  @@schema("public")
+}
+
+enum visit_status {
+  en_attente
+  contre_proposee
+  confirmee
+  annulee
+  effectuee
+
+  @@schema("public")
+}
