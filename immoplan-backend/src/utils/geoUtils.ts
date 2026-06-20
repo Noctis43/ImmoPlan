@@ -81,3 +81,21 @@ export function parsePointFromText(val: unknown, isQuartier = false): Coordinate
     return null;
 }
 
+export function harversineDistance(a: Coordinates, b: Coordinates): number {
+    const R = 6371;
+    const toRoad = (deg: number) => (deg * Math.PI) / 180;
+
+    const dLat = toRoad(b.lat - a.lat);
+    const dLng = toRoad(b.lng - a.lng);
+
+    const sinDLat = Math.sin(dLat / 2);
+    const sinDLng = Math.sin(dLng / 2);
+    const h = sinDLat * sinDLat + Math.cos(toRoad(a.lat)) * Math.cos(toRoad(b.lat)) * sinDLng * sinDLng;
+    const c = 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
+
+    return R * c;
+}
+
+export function harversineDistanceMeters(a: Coordinates, b: Coordinates): number {
+    return harversineDistance(a, b) * 1000;
+}
