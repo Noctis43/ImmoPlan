@@ -52,7 +52,7 @@ export class BST<T> {
      * @param maxKey
      * @returns
     */
-    rangeSearch(minKey: number; maxKey: number): T[] {
+    rangeSearch(minKey: number, maxKey: number): T[] {
         const results: T[] = [];
         this.rangeSearchHelper(this.root, minKey, maxKey, results);
         return results;
