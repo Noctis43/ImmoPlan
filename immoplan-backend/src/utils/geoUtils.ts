@@ -99,3 +99,24 @@ export function harversineDistance(a: Coordinates, b: Coordinates): number {
 export function harversineDistanceMeters(a: Coordinates, b: Coordinates): number {
     return harversineDistance(a, b) * 1000;
 }
+
+export function isInBBox (coords: Coordinates, bbox: BBox): boolean {
+    return (
+        coords.lng >= bbox.swLng &&
+        coords.lng <= bbox.neLng &&
+        coords.lat >= bbox.swLat &&
+        coords.lat <= bbox.neLat
+    );
+}
+
+export function sqlPointCoords(column: string): { lng: string; lat: string} {
+    const inner = `trim(trailing ')' from split_part(${column}, '(', 2))`;
+    return {
+        lng: `CAST(split_part(${inner}, ' ', 1) AS double precision)`,
+        lat: `CAST(split_part(${inner}, ' ', 2) AS double precision)`
+    };
+}
+
+export function sqlHaversineWithinMeters( latCol: string, lngCol: string, latParam: string, lngParam: string, maxMetersParam: string): string {
+    return `(6371000 * 2 * ASIN(LEAST(1::float8, SQRT(POWER(SIN(RADIANS((${latCol} - ${latParam}) / 2)), 2) + COS(RADIANS(${latParam})) * COS(RADIANS(${latCol})) * POWER(SIN(RADIANS((${lngCol} - ${lngParam}) / 2)), 2))))) <= ${maxMetersParam}`;
+}
