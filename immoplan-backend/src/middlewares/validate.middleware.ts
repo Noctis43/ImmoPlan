@@ -4,7 +4,7 @@ import { AnyZodObject, ZodError } from 'zod';
 /**
  * @param schema
 */
-export function vlaidate(schema: AnyZodObject) {
+export function validate(schema: AnyZodObject) {
     return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
             console.log('Validating request data: ', {
