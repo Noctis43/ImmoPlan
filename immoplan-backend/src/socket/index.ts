@@ -4,7 +4,7 @@ import jwt from 'jsonwebtoken';
 import { env } from '../config/env';
 import { logger } from '../utils/logger';
 import { setupChatSocket } from './chat.socket';
-import { setupNotificationSocket } from './notification.socket';
+import { setupNoficationSocket } from './notification.socket';
 
 let io: SocketIOServer;
 
@@ -60,7 +60,7 @@ export function intializeSocket(server: HTTPServer): SocketIOServer {
         socket.join(`user:${userId}`);
 
         setupChatSocket(io, socket);
-        setupNotificationSocket(io, socket);
+        setupNoficationSocket(io, socket);
 
         socket.on('disconnect', (reason) => {
             logger.info(`Socket déconnecté: ${userId} (${reason})`);
