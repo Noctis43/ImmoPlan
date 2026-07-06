@@ -25,4 +25,5 @@ router.patch('/:id/annuler', authMiddleware, validate(annulerSchema), asyncHandl
 
 // PATCH /api/visites/:id/effectuer
 router.patch('/:id/effectuer', authMiddleware, requireRole('offreur'), validate(visiteIdParam), asyncHandler(VisitesController.effectuer));
-  
+
+export default router;
