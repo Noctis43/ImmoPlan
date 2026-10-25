@@ -1,0 +1,44 @@
+{
+    "name": "immoplan-frontend",
+    "private": true,
+    "version": "1.0.0",
+    "type": "module",
+    "scripts": {
+      "dev": "vite",
+      "build": "tsc && vite build",
+      "build:electron": "tsc && vite build --config vite.config.electron.ts --mode electron",
+      "preview": "vite preview",
+      "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0"
+    },
+    "dependencies": {
+      "@tanstack/react-query": "^5.28.0",
+      "axios": "^1.6.8",
+      "date-fns": "^3.6.0",
+      "framer-motion": "^11.0.24",
+      "i18next": "^26.0.8",
+      "leaflet": "^1.9.4",
+      "react": "^18.3.1",
+      "react-dom": "^18.3.1",
+      "react-dropzone": "^14.2.3",
+      "react-i18next": "^17.0.6",
+      "react-leaflet": "^4.2.1",
+      "react-router-dom": "^6.22.3",
+      "recharts": "^2.12.2",
+      "socket.io-client": "^4.7.5",
+      "zustand": "^4.5.2"
+    },
+    "devDependencies": {
+      "@types/leaflet": "^1.9.12",
+      "@types/react": "^18.3.1",
+      "@types/react-dom": "^18.3.0",
+      "@typescript-eslint/eslint-plugin": "^7.3.1",
+      "@typescript-eslint/parser": "^7.3.1",
+      "@vitejs/plugin-react": "^6.0.1",
+      "eslint": "^8.57.0",
+      "eslint-plugin-react-hooks": "^4.6.0",
+      "eslint-plugin-react-refresh": "^0.4.6",
+      "typescript": "^5.4.2",
+      "vite": "^8.0.3"
+    }
+  }
+  
